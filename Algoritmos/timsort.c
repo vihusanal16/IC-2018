@@ -1,124 +1,158 @@
 #include <stdio.h>
 #include <stdlib.h>
+#define N 250
 
-#define RUN 32;
+struct Pilha{
+    int run[N];
+};
+struct Pilha P[N];
 
-// this function sorts array from left index to
-// to right index which is of size atmost RUN
-void insertionSort(int arr[], int left, int right)
-{
-    for (int i = left + 1; i <= right; i++)
-    {
-        int temp = arr[i];
-        int j = i - 1;
-        while (arr[j] > temp && j >= left)
-        {
-            arr[j+1] = arr[j];
-            j--;
+
+void intercala(int *vetor, int posicao, int inicio, int meio, int fim){
+
+    int *aux = malloc(N * sizeof(int));
+    int in, comeco1, comeco2;
+
+    in = inicio;
+    comeco1 = inicio;
+    comeco2 = inicio;
+
+    while(comeco1 < meio && comeco2 < fim){
+        if(P[posicao-1].run[comeco1] < P[posicao].run[comeco2]){
+            aux[in] = P[posicao-1].run[comeco1];
+            comeco1++;
+            in++;
         }
-        arr[j+1] = temp;
-    }
-}
-
-// merge function merges the sorted runs
-void merge(int arr[], int l, int m, int r)
-{
-    // original array is broken in two parts
-    // left and right array
-    int len1 = m - l + 1, len2 = r - m;
-    int left[len1], right[len2];
-    for (int i = 0; i < len1; i++)
-        left[i] = arr[l + i];
-    for (int i = 0; i < len2; i++)
-        right[i] = arr[m + 1 + i];
-
-    int i = 0;
-    int j = 0;
-    int k = l;
-
-    // after comparing, we merge those two array
-    // in larger sub array
-    while (i < len1 && j < len2)
-    {
-        if (left[i] <= right[j])
-        {
-            arr[k] = left[i];
-            i++;
-        }
-        else
-        {
-            arr[k] = right[j];
-            j++;
-        }
-        k++;
-    }
-
-    // copy remaining elements of left, if any
-    while (i < len1)
-    {
-        arr[k] = left[i];
-        k++;
-        i++;
-    }
-
-    // copy remaining element of right, if any
-    while (j < len2)
-    {
-        arr[k] = right[j];
-        k++;
-        j++;
-    }
-}
-
-// iterative Timsort function to sort the
-// array[0...n-1] (similar to merge sort)
-void timSort(int arr[], int n)
-{
-    // Sort individual subarrays of size RUN
-    for (int i = 0; i < n; i+=RUN)
-        insertionSort(arr, i, min((i+31), (n-1)));
-
-    // start merging from size RUN (or 32). It will merge
-    // to form size 64, then 128, 256 and so on ....
-    for (int size = RUN; size < n; size = 2*size)
-    {
-        // pick starting point of left sub array. We
-        // are going to merge arr[left..left+size-1]
-        // and arr[left+size, left+2*size-1]
-        // After every merge, we increase left by 2*size
-        for (int left = 0; left < n; left += 2*size)
-        {
-            // find ending point of left sub array
-            // mid+1 is starting point of right sub array
-            int mid = left + size - 1;
-            int right = min((left + 2*size - 1), (n-1));
-
-            // merge sub array arr[left.....mid] &
-            // arr[mid+1....right]
-            merge(arr, left, mid, right);
+        else {
+            aux[in] = P[posicao].run[comeco2];
+            comeco2++;
+            in++;
         }
     }
-}
+    while(comeco1 < meio){
+        aux[in] = P[posicao-1].run[comeco1];
+        comeco1++;
+        in++;
+    }
+    while(comeco2 < fim){
+        aux[in] = P[posicao].run[comeco2];
+        comeco2++;
+        in++;
+    }
 
-// utility function to print the Array
-void printArray(int arr[], int n)
-{
-    for (int i = 0; i < n; i++)
-        printf("%d  ", arr[i]);
+    for(int i = inicio; i < (meio+meio); i++)
+        vetor[i] = aux[i];
+
+
+    for(int i = inicio; i < (meio+meio); i++)
+        printf("| %d ", vetor[i]);
     printf("\n");
+
+    free(aux);
 }
 
-// Driver program to test above function
-int main()
-{
-    int arr[] = {5, 21, 7, 23, 19};
-    int n = sizeof(arr)/sizeof(arr[0]);
-    printf("Vetor original\n");
-    printArray(arr, n);
 
-    timSort(arr, n);
+void insertion_sort(int posicao, int n){
 
-    printf("Vetor ordenado\n");
-    printArray(arr, n);
-    return 0;
+  int i, j, atual;
+
+  for(i = 1; i < n; i++){
+      atual = P[posicao].run[i];
+
+      for(j = i - 1; (j >= 0) && (P[posicao].run[j] > atual); j--)
+          P[posicao].run[j+1] = P[posicao].run[j];
+
+      P[posicao].run[j+1] = atual;
+  }
+
+}
+
+
+int define_minrun(){
+
+    int r = 0;
+    int n = N;
+
+    while(n >= 64){
+        r |= n & 1;
+        n >>= 1;
+    }
+
+    return n + r;
+}
+
+void timsort(int *vetor){
+
+    int i, j, MinRun, indice_atual = 0;
+
+    j = 0;
+    MinRun = define_minrun();
+
+    //O indice_atual irá percorrer cada elemento do vetor.
+    while(indice_atual < N){
+
+      if((indice_atual + MinRun) > N){
+          MinRun = N - indice_atual;
+      }
+
+      for(i = 0; i < MinRun; i++){
+          P[j].run[i] = vetor[indice_atual];
+          indice_atual++;
+      }
+
+      //Ordenando as run's com o insertion sort.
+      insertion_sort(j, MinRun);
+
+      for(i = 0; i < MinRun; i++){
+          printf("| %d ", P[j].run[i]);
+      }
+      printf("|\n");
+
+      //Verifica se há duas run's para realizar o merge.
+      if(j % 2 != 0){
+          printf("Realizando o merge:\n");
+          intercala(vetor, j, 0, MinRun, MinRun);
+      }
+
+      j++;
+
+    }
+
+}
+
+
+int main(){
+
+  int *vetor = malloc(N * sizeof(int));
+
+
+  for(int i = 0; i < N; i++)
+    vetor[i] = N - i;
+
+  // printf("Vetor original:\n");
+  // for(int i = 1; i <= N; i++)
+  //       printf("%d ", vetor[i - 1]);
+  // printf("\n\n");
+
+  //Teste para os algoritmos de ordenação
+  //insertion_sort(vetor);
+  //mergesort(vetor);
+
+
+  printf("Valor do Minrun: %d\n", define_minrun());
+  timsort(vetor);
+
+
+  // printf("Vetor apos ordenacao:\n");
+  // for(int i = 1; i <= N; i++)
+  //     printf("%d ", vetor[i - 1]);
+  // printf("\n\n");
+
+  printf("\n");
+  for(int i = 0; i < N; i++)
+    printf("| %d ", vetor[i]);
+
+  free(vetor);
+
+  return(0);
 }
